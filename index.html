@@ -203,7 +203,6 @@
 
         var container = document.querySelector('#visualization');
         var elements = container.querySelectorAll('span');
-
         var delay = Number(document.querySelector('#delay').value);
 
         for (var i = 0; i < elements.length; i++) {
@@ -224,71 +223,65 @@
             var element1 = elements[event.data[1]];
             var element2 = elements[event.data[2]];
 
+            // Important: Use the actual data-value assigned to the bar
             var value1 = Number(element1.dataset.value);
-            var value2 = Number(element2.dataset.value);
 
             var distance = Math.floor(element1.offsetLeft - element2.offsetLeft);
 
-            // --- IMPROVED DYNAMIC SCALE LOGIC ---
-            // Base frequencies for C Major starting at C3
+            // --- UNIQUE FREQUENCY LOGIC ---
+            // Base frequencies for C Major (C3 to B3)
             var baseScale = [130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94];
             
-            // We use value1 to determine the unique pitch for this specific element
-            // Subtract 1 because array values are 1-indexed (1 to N)
-            var noteIndex = value1 - 1; 
-            
-            // Pick the note (0-6)
-            var baseNote = baseScale[noteIndex % 7];
-            
-            // Calculate octave: every 7 notes, we double the frequency (octave up)
-            var octaveShift = Math.pow(2, Math.floor(noteIndex / 7));
-            
-            var frequency = baseNote * octaveShift;
-            // ------------------------------------
+            // noteNum 0 is the smallest bar, noteNum 19 is the 20th bar, etc.
+            var noteNum = value1 - 1; 
 
-            if (event.data[0] == 'test') {
-              element1.classList.add('test');
-              element2.classList.add('test');
+            // Pick which of the 7 notes in the scale to use
+            var noteIndex = noteNum % 7;
+            
+            // Determine the octave (0 for first 7, 1 for next 7, etc.)
+            var octave = Math.floor(noteNum / 7);
+            
+            // Frequency = Base Note * 2 to the power of the octave
+            var frequency = baseScale[noteIndex] * Math.pow(2, octave);
+            // ------------------------------
 
-              // Snap to the unique note
+            if (event.data[0] == 'test' || event.data[0] == 'swap') {
+              if (event.data[0] == 'test') {
+                element1.classList.add('test');
+                element2.classList.add('test');
+                track.gain.linearRampToValueAtTime(0.5, audio.currentTime);
+              } else {
+                element1.classList.add('swap');
+                element2.classList.add('swap');
+                track.gain.linearRampToValueAtTime(1.0, audio.currentTime);
+
+                // Handle the DOM swap
+                var temp = document.createElement('span');
+                element1.parentNode.insertBefore(temp, element1);
+                element2.parentNode.insertBefore(element1, element2);
+                temp.parentNode.insertBefore(element2, temp);
+                temp.parentNode.removeChild(temp);
+
+                element1.style.transition = '';
+                element1.style.transform = 'translate(' + (distance * 1) + 'px)';
+                element2.style.transition = '';
+                element2.style.transform = 'translate(' + (distance * -1) + 'px)';
+              }
+
+              // Apply the unique frequency
               tone.frequency.setValueAtTime(frequency, audio.currentTime);
-
+              
+              // Standard envelope to prevent clicking
               track.gain.cancelScheduledValues(audio.currentTime);
-              track.gain.linearRampToValueAtTime(0.75, audio.currentTime);
-              track.gain.linearRampToValueAtTime(0, audio.currentTime + delay);
-            }
-
-            if (event.data[0] == 'swap') {
-              tone.frequency.setValueAtTime(frequency, audio.currentTime);
-
-              track.gain.cancelScheduledValues(audio.currentTime);
-              track.gain.linearRampToValueAtTime(1, audio.currentTime);
-              track.gain.linearRampToValueAtTime(0, audio.currentTime + delay);
-
-              var temp = document.createElement('span');
-              element1.parentNode.insertBefore(temp, element1);
-              element1.classList.add('swap');
-
-              element2.parentNode.insertBefore(element1, element2);
-              element2.classList.add('swap');
-
-              temp.parentNode.insertBefore(element2, temp);
-              temp.parentNode.removeChild(temp);
-
-              element1.style.transition = '';
-              element1.style.transform = 'translate(' + (distance * 1) + 'px)';
-
-              element2.style.transition = '';
-              element2.style.transform = 'translate(' + (distance * -1) + 'px)';
+              track.gain.linearRampToValueAtTime(0.5, audio.currentTime + 0.01); 
+              track.gain.linearRampToValueAtTime(0, audio.currentTime + (delay / 1000));
             }
           } else {
             track.gain.cancelScheduledValues(0);
             track.gain.linearRampToValueAtTime(0, audio.currentTime);
           }
-
           then = now;
         }
-
         window.requestAnimationFrame(tick);
       });
     </script>
