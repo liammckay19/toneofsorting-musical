@@ -197,14 +197,7 @@
         worker.postMessage([algorithm.value, array, pivot.value]);
       };
 
-      To make this work for any array size while keeping every value's note unique and musically relevant (C Major scale), we need to replace the static cMajorScale array with a dynamic calculation.
 
-The logic below uses the Modulo operator to pick the note (C, D, E, F, G, A, or B) and Exponentiation to determine the octave.
-
-Updated window.requestAnimationFrame Loop
-Replace the "NEW SCALE LOGIC" section and the frequency assignment in your script with this:
-
-JavaScript
       var then = performance.now();
       window.requestAnimationFrame(function tick(now) {
 
