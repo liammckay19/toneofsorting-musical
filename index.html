@@ -197,6 +197,14 @@
         worker.postMessage([algorithm.value, array, pivot.value]);
       };
 
+      To make this work for any array size while keeping every value's note unique and musically relevant (C Major scale), we need to replace the static cMajorScale array with a dynamic calculation.
+
+The logic below uses the Modulo operator to pick the note (C, D, E, F, G, A, or B) and Exponentiation to determine the octave.
+
+Updated window.requestAnimationFrame Loop
+Replace the "NEW SCALE LOGIC" section and the frequency assignment in your script with this:
+
+JavaScript
       var then = performance.now();
       window.requestAnimationFrame(function tick(now) {
 
@@ -209,7 +217,6 @@
           if (elements[i].style.translate != '0px') {
             elements[i].style.transition = 'all ' + (delay / 1000) + 's';
             elements[i].style.transform = 'translate(0px)';
-            //elements[i].style.translate = '0px';
           }
         }
 
@@ -229,25 +236,28 @@
 
             var distance = Math.floor(element1.offsetLeft - element2.offsetLeft);
 
-            // --- NEW SCALE LOGIC ---
-            // Frequencies arranged ascending: B4, C5, D5, E5, F5, G5, A5
-            var cMajorScale = [494, 523, 587, 659, 698, 784, 880];
+            // --- IMPROVED DYNAMIC SCALE LOGIC ---
+            // Base frequencies for C Major starting at C3
+            var baseScale = [130.81, 146.83, 164.81, 174.61, 196.00, 220.00, 246.94];
             
-            // Calculate a normalized value based on the elements being compared (0.0 to 1.0)
-            var factor = (value1 + value2) / (2 * elements.length);
+            // We use value1 to determine the unique pitch for this specific element
+            // Subtract 1 because array values are 1-indexed (1 to N)
+            var noteIndex = value1 - 1; 
             
-            // Map the factor to an index in our scale array
-            var scaleIndex = Math.floor(factor * cMajorScale.length);
-            scaleIndex = Math.max(0, Math.min(scaleIndex, cMajorScale.length - 1)); // Keep within bounds
+            // Pick the note (0-6)
+            var baseNote = baseScale[noteIndex % 7];
             
-            var frequency = cMajorScale[scaleIndex];
-            // -----------------------
+            // Calculate octave: every 7 notes, we double the frequency (octave up)
+            var octaveShift = Math.pow(2, Math.floor(noteIndex / 7));
+            
+            var frequency = baseNote * octaveShift;
+            // ------------------------------------
 
             if (event.data[0] == 'test') {
               element1.classList.add('test');
               element2.classList.add('test');
 
-              // Use setValueAtTime to snap directly to the exact note
+              // Snap to the unique note
               tone.frequency.setValueAtTime(frequency, audio.currentTime);
 
               track.gain.cancelScheduledValues(audio.currentTime);
@@ -256,7 +266,6 @@
             }
 
             if (event.data[0] == 'swap') {
-              // Same frequency logic for swaps, just a louder volume
               tone.frequency.setValueAtTime(frequency, audio.currentTime);
 
               track.gain.cancelScheduledValues(audio.currentTime);
