@@ -229,14 +229,26 @@
 
             var distance = Math.floor(element1.offsetLeft - element2.offsetLeft);
 
+            // --- NEW SCALE LOGIC ---
+            // Frequencies arranged ascending: B4, C5, D5, E5, F5, G5, A5
+            var cMajorScale = [494, 523, 587, 659, 698, 784, 880];
+            
+            // Calculate a normalized value based on the elements being compared (0.0 to 1.0)
+            var factor = (value1 + value2) / (2 * elements.length);
+            
+            // Map the factor to an index in our scale array
+            var scaleIndex = Math.floor(factor * cMajorScale.length);
+            scaleIndex = Math.max(0, Math.min(scaleIndex, cMajorScale.length - 1)); // Keep within bounds
+            
+            var frequency = cMajorScale[scaleIndex];
+            // -----------------------
+
             if (event.data[0] == 'test') {
               element1.classList.add('test');
               element2.classList.add('test');
 
-              var factor = ((value1 / elements.length) + (value2 / elements.length) / 2);
-              var frequency = 440 + (factor * 440);
-
-              tone.frequency.linearRampToValueAtTime(frequency, audio.currentTime);
+              // Use setValueAtTime to snap directly to the exact note
+              tone.frequency.setValueAtTime(frequency, audio.currentTime);
 
               track.gain.cancelScheduledValues(audio.currentTime);
               track.gain.linearRampToValueAtTime(0.75, audio.currentTime);
@@ -244,10 +256,8 @@
             }
 
             if (event.data[0] == 'swap') {
-              var factor = ((value1 / elements.length) + (value2 / elements.length) / 2);
-              var frequency = 440 - (factor * 440);
-
-              tone.frequency.linearRampToValueAtTime(frequency, audio.currentTime);
+              // Same frequency logic for swaps, just a louder volume
+              tone.frequency.setValueAtTime(frequency, audio.currentTime);
 
               track.gain.cancelScheduledValues(audio.currentTime);
               track.gain.linearRampToValueAtTime(1, audio.currentTime);
